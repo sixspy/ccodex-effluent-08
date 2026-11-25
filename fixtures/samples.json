@@ -73,5 +73,50 @@
     "status": "已裁定",
     "adjudicated_at": "2026-11-19T16:00:00",
     "created_at": "2026-11-19T15:30:00"
+  },
+  {
+    "sample_code": "SM-X8-A-001",
+    "outfall_code": "OF-X8-A",
+    "permit_ref": "DP-2026-X08",
+    "metrics": {
+      "cod": 40.0,
+      "nh3n": 3.0,
+      "tp": 0.25
+    },
+    "flow_m3h": 2000,
+    "generation": 2,
+    "status": "已封批",
+    "adjudicated_at": "2026-11-21T09:00:00",
+    "created_at": "2026-11-21T08:30:00"
+  },
+  {
+    "sample_code": "SM-H08",
+    "outfall_code": "OF-X8-A",
+    "permit_ref": "DP-2026-X08",
+    "metrics": {
+      "cod": 33.0,
+      "nh3n": 2.6,
+      "tp": 0.21
+    },
+    "flow_m3h": 1800,
+    "generation": 1,
+    "status": "已准排",
+    "adjudicated_at": "2026-11-22T10:00:00",
+    "created_at": "2026-11-22T09:30:00"
+  },
+  {
+    "sample_code": "SM-X8-A-002",
+    "outfall_code": "OF-X8-A",
+    "permit_ref": "DP-2026-X08",
+    "metrics": {
+      "cod": 35.0,
+      "nh3n": 2.7,
+      "tp": 0.22
+    },
+    "flow_m3h": 1900,
+    "generation": 1,
+    "status": "已裁定",
+    "adjudicated_at": "2026-11-23T08:40:00",
+    "created_at": "2026-11-23T08:10:00"
   }
 ]

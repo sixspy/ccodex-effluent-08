@@ -9,6 +9,7 @@ from auth import AuthHeader, require_user, require_writer
 from db import connect, now_iso, write_audit
 from locks import release, require_lock
 from models import SampleIn
+from seal_svc import latest_snapshot, snapshot_ok
 from validators import (
     adjudicate_exceed,
     metric_summary,
@@ -49,6 +50,11 @@ def list_samples(authorization: AuthHeader = None, status: str | None = None):
         for r in rows:
             d = dict(r)
             d["metrics"] = json.loads(d["metrics"] or "{}")
+            snap = latest_snapshot(conn, r["id"])
+            d["latest_snapshot_generation"] = (
+                int(snap["sample_generation"]) if snap else None
+            )
+            d["snapshot_ok"] = snapshot_ok(conn, r["id"], r["generation"])
             items.append(d)
         return {"items": items}
 
@@ -70,6 +76,11 @@ def get_sample(sample_id: int, authorization: AuthHeader = None):
             raise HTTPException(404, "采样批次不存在")
         data = dict(row)
         data["metrics"] = json.loads(data["metrics"] or "{}")
+        snap = latest_snapshot(conn, sample_id)
+        data["latest_snapshot_generation"] = (
+            int(snap["sample_generation"]) if snap else None
+        )
+        data["snapshot_ok"] = snapshot_ok(conn, sample_id, data["generation"])
         holds = conn.execute(
             "SELECT * FROM exceed_holds WHERE sample_id=? ORDER BY id DESC",
             (sample_id,),

@@ -56,18 +56,20 @@ def test_sample_exceed_release_seal_flow():
     )
     assert close.status_code == 200
     assert close.json()["sample_adjudicated"] is True
+    # 无快照禁准（甲路径）：须先封批出最新快照，再准排
+    seal = c.post("/api/seals", headers=h, json={"sample_id": created["id"]})
+    assert seal.status_code == 200
+    assert seal.json()["generation"] == 2
     release = c.post(
         "/api/releases",
         headers=h,
         json={"sample_id": created["id"], "officer": "验收员"},
     )
     assert release.status_code == 200
-    seal = c.post("/api/seals", headers=h, json={"sample_id": created["id"]})
-    assert seal.status_code == 200
-    assert seal.json()["generation"] == 2
     proof = c.get("/api/proof/sample/SM-FLOW-001", headers=h).json()
     assert proof["released"] is True
     assert proof["sealed"] is True
+    assert proof["snapshot_ok"] is True
 
 
 def test_viewer_cannot_write():

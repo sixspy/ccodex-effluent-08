@@ -48,5 +48,15 @@
     "tp_limit": 0.5,
     "status": "停用",
     "created_at": "2026-11-01T09:20:00"
+  },
+  {
+    "outfall_code": "OF-X8-A",
+    "plant_code": "PL-EAST-01",
+    "river_reach": "东城河辛八槽",
+    "cod_limit": 50,
+    "nh3n_limit": 5,
+    "tp_limit": 0.5,
+    "status": "开放",
+    "created_at": "2026-11-01T09:25:00"
   }
 ]

@@ -12,8 +12,10 @@ export const dashboardViewTemplate = `
     <div class="stat"><div class="n">{{ dash.discharge_seals || 0 }}</div><div class="l">已封批</div></div>
     <div class="stat"><div class="n">{{ dash.permits || 0 }}</div><div class="l">许可册</div></div>
     <div class="stat"><div class="n">{{ dash.side_pending || 0 }}</div><div class="l">旁路挂起</div></div>
+    <div class="stat"><div class="n" :class="{fail: dash.missing_snapshot}">{{ dash.missing_snapshot || 0 }}</div><div class="l">缺快照警告</div></div>
   </div>
     <div class="panel">
       <h3>产品骨架</h3>
       <p class="muted">{{ (dash.meta && dash.meta.skeleton) || "—" }}</p>
+      <p v-if="dash.missing_snapshot" class="warn">缺最新封批快照（无快照禁准）：{{ (dash.missing_snapshot_samples || []).join("、") }}</p>
     </div>`;

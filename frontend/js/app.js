@@ -76,11 +76,23 @@ createApp({
     const api = createApi(() => token.value, () => logout());
 
     const releasableSamples = computed(() =>
-      samples.value.filter((s) => s.status === "已裁定")
+      samples.value.filter((s) => ["已裁定", "已封批"].includes(s.status))
     );
     const sealableSamples = computed(() =>
       samples.value.filter((s) => ["已裁定", "已准排"].includes(s.status))
     );
+    const snapshotMissingSamples = computed(() =>
+      samples.value.filter(
+        (s) => ["已裁定", "已准排", "已封批"].includes(s.status) && !s.snapshot_ok
+      )
+    );
+    const selectedReleaseSample = computed(() =>
+      samples.value.find((s) => s.id === releaseForm.value.sample_id)
+    );
+    const releaseBlocked = computed(() => {
+      const s = selectedReleaseSample.value;
+      return !s || !s.snapshot_ok || !["已裁定", "已封批"].includes(s.status);
+    });
 
     function statusClass(s) {
       if (!s) return "muted";
@@ -223,6 +235,7 @@ createApp({
       reconOne, reconAllItems, proofOne, reconCode, proofCode,
       plantForm, outfallForm, sampleForm, releaseForm, sealForm, permitForm,
       lineageForm, labForm, sludgeForm, releasableSamples, sealableSamples,
+      snapshotMissingSamples, selectedReleaseSample, releaseBlocked,
       login, logout, refresh, statusClass, sampleClass, fmtMetrics,
       loadPlant, loadSample, createPlant, createOutfall, createSample,
       closeExceed, createRelease, createSeal, createPermit, createLineage,

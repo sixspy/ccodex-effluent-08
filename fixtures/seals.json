@@ -6,5 +6,13 @@
     "seal_ref": "SL-SM-OF-E1-A-001-G2",
     "status": "已封批",
     "sealed_at": "2026-11-10T12:00:00"
+  },
+  {
+    "sample_code": "SM-X8-A-001",
+    "sample_generation": 2,
+    "snapshot": "COD=40.0 NH3-N=3.00 TP=0.250",
+    "seal_ref": "SL-SM-X8-A-001-G2",
+    "status": "已封批",
+    "sealed_at": "2026-11-21T10:00:00"
   }
 ]

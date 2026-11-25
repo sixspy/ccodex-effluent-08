@@ -7,9 +7,13 @@ from auth import AuthHeader, require_user, require_writer
 from db import connect, now_iso, write_audit
 from locks import release, require_lock
 from models import ReleaseIn
+from seal_svc import snapshot_ok
 from validators import validate_sample_releasable
 
 router = APIRouter(tags=["release"])
+
+# 无快照禁准（甲路径，2026-11-25 锁死）：缺最新封批快照 → 记偏离、整笔回退、正式册零增
+NO_SNAPSHOT_DRIFT = "无快照禁准偏航"
 
 
 @router.get("/api/releases")
@@ -37,6 +41,21 @@ def create_release(body: ReleaseIn, authorization: AuthHeader = None):
             ).fetchone()
             if not sample:
                 raise HTTPException(404, "采样批次不存在")
+            if not snapshot_ok(conn, sample["id"], sample["generation"]):
+                write_audit(
+                    conn,
+                    user,
+                    NO_SNAPSHOT_DRIFT,
+                    sample["sample_code"],
+                    {
+                        "sample_id": sample["id"],
+                        "generation": sample["generation"],
+                        "reason": "缺最新封批快照",
+                        "decision": "准排整笔回退，正式册零增",
+                    },
+                )
+                conn.commit()
+                raise HTTPException(409, "无快照禁准：缺最新封批快照，准排拒写")
             validate_sample_releasable(sample["status"])
             open_hold = conn.execute(
                 "SELECT id FROM exceed_holds WHERE sample_id=? AND status='开放'",
@@ -76,6 +95,9 @@ def create_release(body: ReleaseIn, authorization: AuthHeader = None):
             )
             conn.commit()
             return {"release_ref": ref, "status": "已准排"}
+        except Exception:
+            conn.rollback()
+            raise
         finally:
             release(conn, lock_key, user)
             conn.commit()

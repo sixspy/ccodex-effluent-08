@@ -6,6 +6,7 @@ import json
 from fastapi import APIRouter, HTTPException
 
 from auth import AuthHeader, require_user
+from seal_svc import PIPELINE_STATUSES, snapshot_ok
 from validators import validate_permit_match
 
 router = APIRouter(tags=["reconcile"])
@@ -41,7 +42,7 @@ def _reconcile_permit(conn, permit_code: str) -> dict:
         "SELECT * FROM discharge_permits WHERE permit_code=?", (permit_code,)
     ).fetchone()
     samples = conn.execute(
-        """SELECT sample_code, flow_m3h, metrics, status, generation FROM sample_batches
+        """SELECT id, sample_code, flow_m3h, metrics, status, generation FROM sample_batches
            WHERE permit_ref=? AND status NOT IN ('作废')""",
         (permit_code,),
     ).fetchall()
@@ -59,6 +60,8 @@ def _reconcile_permit(conn, permit_code: str) -> dict:
     }
     details = []
     all_ok = True
+    pipeline = 0
+    missing_snapshot = 0
     for s in samples:
         metrics = json.loads(s["metrics"] or "{}")
         ok = validate_permit_match(
@@ -66,6 +69,19 @@ def _reconcile_permit(conn, permit_code: str) -> dict:
         )
         if not ok:
             all_ok = False
+        snap_ok = snapshot_ok(conn, s["id"], s["generation"])
+        released = bool(
+            conn.execute(
+                """SELECT id FROM discharge_releases
+                   WHERE sample_id=? AND status='已准排' LIMIT 1""",
+                (s["id"],),
+            ).fetchone()
+        )
+        in_pipeline = s["status"] in PIPELINE_STATUSES
+        if in_pipeline:
+            pipeline += 1
+            if not snap_ok:
+                missing_snapshot += 1
         details.append(
             {
                 "sample_code": s["sample_code"],
@@ -74,6 +90,9 @@ def _reconcile_permit(conn, permit_code: str) -> dict:
                 "metrics": metrics,
                 "flow_m3h": s["flow_m3h"],
                 "matched": ok,
+                "in_pipeline": in_pipeline,
+                "snapshot_ok": snap_ok,
+                "released": released,
             }
         )
     seal_rows = conn.execute(
@@ -82,12 +101,16 @@ def _reconcile_permit(conn, permit_code: str) -> dict:
            WHERE s.permit_ref=?""",
         (permit_code,),
     ).fetchall()
+    # 齐套 = 封批快照齐套：在管批次逐批持最新代快照；不凭准排行点亮
+    snapshot_complete = pipeline > 0 and missing_snapshot == 0
     return {
         "permit_code": permit_code,
         "quota_m3d": permit["quota_m3d"],
         "caps": caps,
         "balanced": all_ok,
-        "proof_ready": all_ok and len(seal_rows) >= 1,
+        "proof_ready": all_ok and snapshot_complete,
+        "snapshot_complete": snapshot_complete,
+        "missing_snapshot": missing_snapshot,
         "seal_count": len(seal_rows),
         "samples": details,
         "seals": [dict(x) for x in seal_rows],
@@ -122,6 +145,7 @@ def proof_sample(sample_code: str, authorization: AuthHeader = None):
             "generation": sample["generation"],
             "released": any(r["status"] == "已准排" for r in releases),
             "sealed": any(s["status"] == "已封批" for s in seals),
+            "snapshot_ok": snapshot_ok(conn, sample["id"], sample["generation"]),
             "exceed_closed": len(open_holds) == 0 and (len(closed) > 0 or sample["status"] != "旁路挂起"),
             "holds": [dict(h) for h in holds],
             "releases": [dict(r) for r in releases],

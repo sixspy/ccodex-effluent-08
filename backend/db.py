@@ -458,6 +458,8 @@ def init_db() -> None:
 
 
 def dashboard_stats(conn: sqlite3.Connection) -> dict:
+    from seal_svc import PIPELINE_STATUSES, snapshot_ok
+
     plants = conn.execute("SELECT COUNT(*) c FROM plants").fetchone()["c"]
     outfalls = conn.execute("SELECT COUNT(*) c FROM outfalls").fetchone()["c"]
     samples = conn.execute("SELECT COUNT(*) c FROM sample_batches").fetchone()["c"]
@@ -474,6 +476,16 @@ def dashboard_stats(conn: sqlite3.Connection) -> dict:
     pending = conn.execute(
         "SELECT COUNT(*) c FROM sample_batches WHERE status='旁路挂起'"
     ).fetchone()["c"]
+    marks = ",".join("?" for _ in PIPELINE_STATUSES)
+    pipeline_rows = conn.execute(
+        f"SELECT id, sample_code, generation FROM sample_batches WHERE status IN ({marks})",
+        PIPELINE_STATUSES,
+    ).fetchall()
+    missing_codes = [
+        r["sample_code"]
+        for r in pipeline_rows
+        if not snapshot_ok(conn, r["id"], r["generation"])
+    ]
     stubs = {
         "lab_courier_jobs": conn.execute(
             "SELECT COUNT(*) c FROM lab_courier_jobs"
@@ -491,6 +503,8 @@ def dashboard_stats(conn: sqlite3.Connection) -> dict:
         "discharge_seals": sealed,
         "permits": permits,
         "side_pending": pending,
+        "missing_snapshot": len(missing_codes),
+        "missing_snapshot_samples": missing_codes,
         "stubs": stubs,
         "meta": PRODUCT_META,
     }

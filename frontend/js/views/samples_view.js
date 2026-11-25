@@ -3,12 +3,13 @@ export const samplesViewTemplate = `
     <div class="panel">
       <h3>采样批次</h3>
       <table>
-        <thead><tr><th>编号</th><th>口</th><th>许可</th><th>流量</th><th>状态</th><th>代</th></tr></thead>
+        <thead><tr><th>编号</th><th>口</th><th>许可</th><th>流量</th><th>状态</th><th>代</th><th>快照代</th></tr></thead>
         <tbody>
           <tr v-for="s in samples" :key="s.id" @click="loadSample(s.id)" style="cursor:pointer">
             <td>{{ s.sample_code }}</td><td>{{ s.outfall_code }}</td><td>{{ s.permit_ref }}</td>
             <td>{{ s.flow_m3h }}</td><td :class="sampleClass(s.status)">{{ s.status }}</td>
             <td>{{ s.generation }}</td>
+            <td :class="s.snapshot_ok ? 'pass' : 'warn'">{{ s.snapshot_ok ? (s.latest_snapshot_generation + " 齐") : "缺快照" }}</td>
           </tr>
         </tbody>
       </table>

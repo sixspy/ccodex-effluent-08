@@ -14,11 +14,12 @@ export const releaseViewTemplate = `
     </div>
     <div class="panel">
       <h3>签发准排</h3>
-      <label>已裁定采样</label>
+      <label>候选采样（已裁定/已封批）</label>
       <select v-model.number="releaseForm.sample_id">
-        <option v-for="s in releasableSamples" :key="s.id" :value="s.id">{{ s.sample_code }} · {{ s.status }}</option>
+        <option v-for="s in releasableSamples" :key="s.id" :value="s.id">{{ s.sample_code }} · {{ s.status }} · {{ s.snapshot_ok ? "快照齐" : "缺快照" }}</option>
       </select>
       <label>值班员</label><input v-model="releaseForm.officer"/>
-      <div class="actions"><button @click="createRelease">准排</button></div>
+      <p v-if="releaseBlocked" class="warn">缺封批快照：无快照禁准，准排按钮已禁用</p>
+      <div class="actions"><button :disabled="releaseBlocked" @click="createRelease">准排</button></div>
     </div>
   </div>`;

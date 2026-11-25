@@ -60,8 +60,8 @@ def validate_permit_match(
 
 
 def validate_sample_releasable(status: str) -> None:
-    if status != "已裁定":
-        raise HTTPException(400, f"当前状态不可准排：{status}")
+    if status != "已封批":
+        raise HTTPException(400, f"当前状态不可准排：{status}（须已封批且持最新快照）")
 
 
 def validate_sample_sealable(status: str) -> None:

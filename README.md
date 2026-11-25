@@ -6,6 +6,12 @@
 
 采样批次入库后裁定超标才准排放封批，驳回进旁路挂起，指标血缘与排放许可对账。
 
+## 裁决记录
+
+- effluent-08 无快照禁准（甲路径，2026-11-25 锁死）：缺最新封批快照 → 准排
+  整笔回退、正式册零增、记「无快照禁准偏航」。见
+  [docs/effluent-08-no-snapshot-no-release.md](docs/effluent-08-no-snapshot-no-release.md)。
+
 ## 一键起环境
 
 ```bash

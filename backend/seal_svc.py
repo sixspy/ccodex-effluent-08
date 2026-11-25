@@ -13,17 +13,42 @@ from validators import metric_summary, validate_sample_sealable
 
 router = APIRouter(tags=["seal"])
 
+# 在管批次（准排链路）状态：对账齐套与总览缺快照警告的同源口径
+PIPELINE_STATUSES = ("已裁定", "已准排", "已封批")
+
+
+def latest_snapshot(conn, sample_id: int):
+    """最新封批快照：最高代的已封批行（无快照禁准口径的唯一数据源）。"""
+    return conn.execute(
+        """SELECT * FROM discharge_seals
+           WHERE sample_id=? AND status='已封批'
+           ORDER BY sample_generation DESC, id DESC LIMIT 1""",
+        (sample_id,),
+    ).fetchone()
+
+
+def snapshot_ok(conn, sample_id: int, generation: int) -> bool:
+    """最新封批快照是否覆盖采样当前代。"""
+    row = latest_snapshot(conn, sample_id)
+    return bool(row) and int(row["sample_generation"]) == int(generation)
+
 
 @router.get("/api/seals")
 def list_seals(authorization: AuthHeader = None):
     require_user(authorization)
     with connect() as conn:
         rows = conn.execute(
-            """SELECT d.*, s.sample_code FROM discharge_seals d
+            """SELECT d.*, s.sample_code, s.generation AS current_generation
+               FROM discharge_seals d
                JOIN sample_batches s ON s.id=d.sample_id
                ORDER BY d.id DESC"""
         ).fetchall()
-        return {"items": [dict(r) for r in rows]}
+        items = []
+        for r in rows:
+            d = dict(r)
+            d["is_latest"] = int(d["sample_generation"]) == int(d["current_generation"])
+            items.append(d)
+        return {"items": items}
 
 
 @router.post("/api/seals")
